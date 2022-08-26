@@ -1,0 +1,232 @@
+#' @Function fig_1_or_3 is used to plot Figure 1 and Figure 3 in the MEE paper by Chao et al. (2021).
+#' @param output is an object computed from functions in the package iNEXT.3D.
+#' @param y_label specifies the diversity type on the Y-axis in a plot (e.g., "taxonomic diversity", "phylogenetic diversity" or "functional diversity".)
+#' 
+fig_1_or_3 <- function(output, y_label) {
+  SC = unique(output$SC)[1:2] %>% as.numeric
+  output$SC <- factor(output$SC, levels = c(SC[1], 'Observed', SC[2], 'Asymptotic'))
+  poly_ord <- c(1, 4)
+  q = unique(output$Order.q)
+  anovs <- matrix(NA, nrow = length(poly_ord)*length(q), ncol = nlevels(output$SC))
+  names(output)[3] <- 'qD'
+  
+  for(i in 1:length(q)){
+    for(j in 1:nlevels(output$SC)){
+      myout_ <- output %>% filter(SC == levels(output$SC)[j], Order.q == q[i]) %>% 
+        mutate(year = as.numeric(substr(Assemblage, 3, 8)) - 1980)
+      for(k in 1:length(poly_ord)) {
+        tmpp <- lm(formula = qD ~ poly(year, poly_ord[k]), data = myout_) %>% summary
+        anovs[length(poly_ord)*i-(k-1), j] <- tmpp$coefficients[nrow(tmpp$coefficients), ncol(tmpp$coefficients)]
+      }
+    }
+  }
+  colnames(anovs) <- levels(output$SC)
+  rownames(anovs) <- rep(paste0('q = ', q), each = length(poly_ord))
+  anovs <- cbind(Order.q = rep(q, each = length(poly_ord)), poly_ord = rep(rev(poly_ord), length(q)), anovs) %>% 
+    as_tibble(.) %>% 
+    melt(., id.vars = c('Order.q', 'poly_ord'), variable.name = 'SC', value.name = 'pvalue') %>% as_tibble() %>% 
+    mutate(sig = as.numeric(pvalue < 0.05)) %>% select(-pvalue)
+  
+  output = output %>% mutate(year = as.numeric(substr(Assemblage, 3, nchar(Assemblage))) - 1980) %>% arrange(SC, Order.q)
+  output <- output %>% group_by(SC, Order.q) %>% 
+    do(lm(formula = qD ~ poly(year, 4), data = . ) %>% predict %>% tibble(fitD4 = .)) %>% 
+    ungroup %>% select(fitD4) %>% bind_cols(output) %>% select(year, Order.q, qD, SC, fitD4)
+  output <- output %>% group_by(SC, Order.q) %>% 
+    do(lm(formula = qD ~ poly(year, 1), data = . ) %>% predict %>% tibble(fitD1 = .)) %>% 
+    ungroup %>% select(fitD1) %>% bind_cols(output) %>% select(year, Order.q, qD, SC, fitD4, fitD1)
+  
+  output <- melt(output, id.vars = c('year','Order.q','SC'), variable.name = 'type', value.name = 'qD') %>% as_tibble() 
+  output <- output %>% mutate(poly_ord = ifelse(type == 'qD', 0, ifelse(type == 'fitD4', 4, 1)))
+  output <- left_join(x = output, y = anovs, by = c('Order.q', 'SC', 'poly_ord')) %>% select(-poly_ord)
+  output$sig[is.na(output$sig)] <- 0
+  output$SC <- as.character(output$SC)
+  
+  output$SC[!(output$SC %in% c('Asymptotic', 'Observed'))] <- paste0('Coverage = ', output$SC[!(output$SC %in% c('Asymptotic', 'Observed'))] )
+  output$type <- as.character(output$type)
+  
+  pics <- list()
+  SC_title <- rev(unique(output$SC))
+  SC_title_tmp <- SC_title[!(SC_title %in% c("Observed", "Asymptotic"))] %>% 
+    gsub(pattern = 'Coverage = ', replacement = '', x = .) %>% as.numeric(.)*100 
+  SC_title_tmp <- 
+    sapply(SC_title_tmp, function(x) {
+      ifelse(round(x)-x == 0, substr(as.character(x), 1, 2), substr(as.character(x), 1, nchar(x)))
+    }) %>% paste0('Coverage = ', .,'%')
+  SC_title[!(SC_title %in% c("Observed", "Asymptotic"))] <- SC_title_tmp
+  output$SC <- factor(output$SC, levels = rev(unique(output$SC)))
+  output$type <- factor(output$type, levels = unique(output$type))
+  maxy <- max(output$qD)
+  miny <- min(output$qD)
+  
+  if (y_label == 'Taxonomic diversity') {
+    n_break = 5
+  } else if (y_label == 'Phylogenetic diversity') {
+    n_break = 6
+  } else { n_break = 7 }
+  
+  for (i in 1:nlevels(output$SC)){
+    tmp <- output %>% filter(SC == levels(output$SC)[i])
+    if (length(unique(tmp$sig)) == 1){
+      tmp <- rbind(tmp, tmp[1,])
+      tmp[nrow(tmp), "qD"] <- NA
+      tmp[nrow(tmp), "sig"] <- 1-unlist(tmp[nrow(tmp), "sig"])
+    }
+    tmp$SC <- as.character(tmp$SC)
+    tmp$sig <- factor(tmp$sig, levels = c(0, 1))
+    tmp$Order.q <- factor(tmp$Order.q, levels = q)
+    
+    pp <- ggplot(data = tmp) + theme_bw() +
+      geom_line(aes(x = year + 1980, y = qD, size = sig, colour = Order.q, alpha = type, linetype = type)) +
+      xlim(c(1981, 2019)) +
+      coord_cartesian(ylim = c(miny, maxy)) +
+      scale_linetype_manual(values = c(1, 1, 2), guide = FALSE) +
+      scale_color_manual(values = c('#1F78B4', '#E7298A', '#1B9E77'), name = "Order.q") +
+      scale_alpha_manual(values = c(0.4, 1, 1), guide = FALSE) +
+      scale_size_manual(values = c(1, 1.6), guide = FALSE) +
+      scale_y_continuous(breaks = scales::pretty_breaks(n = n_break)) +
+      theme(legend.position = 'bottom', legend.text = element_text(size = 18),
+            legend.title = element_text(size = 18),
+            axis.text.y = element_text(size = 17),
+            axis.text.x = element_text(size = 10, face = "bold"),
+            axis.title = element_blank(),
+            plot.title = element_text(hjust = 0.5, size = 17)) +
+      ggtitle(SC_title[i]) + 
+      guides(color = guide_legend(override.aes = list(size = 2)))
+    pics[[i]] <- pp
+  }
+  if (y_label == "Functional diversity") {
+    ans <- ggarrange(plotlist = pics, ncol = 4, nrow = 1, common.legend = TRUE, legend = 'bottom')
+  } else {ans <- ggarrange(plotlist = pics, ncol = 4, nrow = 1, common.legend = TRUE, legend = 'none')}
+  ans <- annotate_figure(ans, left = text_grob(y_label, rot = 90, size = 18, hjust = 0.5))
+  ans
+}
+
+#' @Function fig_2_or_4 is used to plot figure 2 and figure 4 in the MEE paper.
+#' @param TD.output: taxonomic-diversity obtained from procedures for plotting Figure 1 (or Figure 3).
+#' @param PD.output: phylogenetic-diversity obtained from procedures for plotting Figure 1 (or Figure 3).
+#' @param FD.output: functional-diversity obtained from procedures for plotting Figure 1 (or Figure 3).
+#' @param q specifies the diversity order (q = 0, 1  or 2).
+#' 
+fig_2_or_4 <- function(TD.output, PD.output, FD.output, q) {
+  do.ANOVA <- function(output) {
+    SC = unique(output$SC)[1:2] %>% as.numeric
+    output$SC <- factor(output$SC, levels = c(SC[1], 'Observed', SC[2], 'Asymptotic'))
+    poly_ord <- c(1, 4)
+    q = unique(output$Order.q)
+    anovs <- matrix(NA, nrow = length(poly_ord)*length(q), ncol = nlevels(output$SC))
+    names(output)[3] <- 'qD'
+    
+    for(i in 1:length(q)){
+      for(j in 1:nlevels(output$SC)){
+        myout_ <- output %>% filter(SC == levels(output$SC)[j], Order.q == q[i]) %>% 
+          mutate(year = as.numeric(substr(Assemblage, 3, 8)) - 1980)
+        for(k in 1:length(poly_ord)) {
+          tmpp <- lm(formula = qD ~ poly(year, poly_ord[k]), data = myout_) %>% summary
+          anovs[length(poly_ord)*i-(k-1), j] <- tmpp$coefficients[nrow(tmpp$coefficients), ncol(tmpp$coefficients)]
+        }
+      }
+    }
+    colnames(anovs) <- levels(output$SC)
+    rownames(anovs) <- rep(paste0('q = ', q), each = length(poly_ord))
+    anovs <- cbind(Order.q = rep(q, each = length(poly_ord)), poly_ord = rep(rev(poly_ord), length(q)), anovs) %>% 
+      as_tibble(.) %>% 
+      melt(., id.vars = c('Order.q', 'poly_ord'), variable.name = 'SC', value.name = 'pvalue') %>% as_tibble() %>% 
+      mutate(sig = as.numeric(pvalue < 0.05)) %>% select(-pvalue)
+    
+    output = output %>% mutate(year = as.numeric(substr(Assemblage, 3, nchar(Assemblage))) - 1980) %>% arrange(SC, Order.q)
+    output <- output %>% group_by(SC, Order.q) %>% 
+      do(lm(formula = qD ~ poly(year, 4), data = . ) %>% predict %>% tibble(fitD4 = .)) %>% 
+      ungroup %>% select(fitD4) %>% bind_cols(output) %>% select(year, Order.q, qD, SC, fitD4)
+    output <- output %>% group_by(SC, Order.q) %>% 
+      do(lm(formula = qD ~ poly(year, 1), data = . ) %>% predict %>% tibble(fitD1 = .)) %>% 
+      ungroup %>% select(fitD1) %>% bind_cols(output) %>% select(year, Order.q, qD, SC, fitD4, fitD1)
+    
+    output <- melt(output, id.vars = c('year','Order.q','SC'), variable.name = 'type', value.name = 'qD') %>% as_tibble() 
+    output <- output %>% mutate(poly_ord = ifelse(type == 'qD', 0, ifelse(type == 'fitD4', 4, 1)))
+    output <- left_join(x = output, y = anovs, by = c('Order.q', 'SC', 'poly_ord')) %>% select(-poly_ord)
+    output$sig[is.na(output$sig)] <- 0
+    output$SC <- as.character(output$SC)
+    
+    output$SC[!(output$SC %in% c('Asymptotic', 'Observed'))] <- paste0('Coverage = ', output$SC[!(output$SC %in% c('Asymptotic', 'Observed'))] )
+    output$type <- as.character(output$type)
+    output
+  }
+  
+  out_td <- do.ANOVA(output = TD.output) %>% mutate(type2 = 'Taxonomic diversity')
+  out_pd <- do.ANOVA(output = PD.output) %>% mutate(type2 = 'Phylogenetic diversity')
+  out_fd <- do.ANOVA(output = FD.output) %>% mutate(type2 = 'Functional diversity')
+  output <- rbind(out_td, out_pd, out_fd)
+  
+  pics <- list()
+  SC_title <- rev(unique(output$SC))
+  SC_title_tmp <- SC_title[!(SC_title %in% c("Observed", "Asymptotic"))] %>% 
+    gsub(pattern = 'Coverage = ', replacement = '', x = .) %>% as.numeric(.)*100 
+  SC_title_tmp <- 
+    sapply(SC_title_tmp, function(x) {
+      ifelse(round(x)-x == 0, substr(as.character(x), 1, 2), substr(as.character(x), 1, nchar(x)))
+    }) %>% paste0('Coverage = ', .,'%')
+  SC_title[!(SC_title %in% c("Observed", "Asymptotic"))] <- SC_title_tmp
+  output <- output %>% filter(SC %in% rev(unique(output$SC)), Order.q == q)
+  output$SC <- factor(output$SC, levels = rev(unique(output$SC)))
+  output$type <- factor(output$type, levels = unique(output$type))
+  
+  floor_dec <- function(x, dig = 1) round(x - 5*10^(- dig - 1), dig)
+  ceiling_dec <- function(x, dig = 1) round(x + 5*10^(- dig - 1), dig)
+  
+  maxy <- ceiling(max(output$qD))
+  
+  if (q == 0) {
+    miny <- floor(min(output$qD))
+  } else {
+    miny <- floor_dec(min(output$qD), 1)
+  }
+  
+  if (q == 0) {
+    y_max_low <- ceiling(max(output$qD[output$type2 != 'Taxonomic diversity'], na.rm = T))
+    y_min_high <- floor(min(output$qD[output$type2 == 'Taxonomic diversity'], na.rm = T))
+  }
+  
+  for (i in 1:nlevels(output$SC)) {
+    tmp <- output %>% filter(SC == levels(output$SC)[i])
+    if (length(unique(tmp$sig)) == 1){
+      tmp <- rbind(tmp, tmp[1,])
+      tmp[nrow(tmp), "qD"] <- NA
+      tmp[nrow(tmp), "sig"] <- 1 - unlist(tmp[nrow(tmp), "sig"])
+    }
+    
+    tmp$SC <- as.character(tmp$SC)
+    tmp$sig <- factor(tmp$sig, levels = c(0, 1))
+    tmp$type2 <- factor(tmp$type2, levels = unique(tmp$type2))
+    
+    pp <- ggplot(data = tmp) + theme_bw() +
+      geom_line(aes(x = year + 1980, y = qD, size = sig, colour = type2, alpha = type, linetype = type)) +
+      xlim(c(1981, 2019)) +
+      coord_cartesian(ylim = c(miny, maxy)) +
+      scale_linetype_manual(values = c(1, 1, 2), guide = FALSE) +
+      scale_color_manual(values = c('#A700D5', 'black', '#D55E00')) +
+      scale_alpha_manual(values = c(0.4, 1, 1), guide = FALSE) +
+      scale_size_manual(values = c(1, 1.8), guide = FALSE) +
+      scale_y_continuous(breaks = scales::pretty_breaks(n = 6)) +
+      theme(legend.position = 'bottom', legend.text = element_text(size = 18),
+            legend.title = element_blank(),
+            axis.text.y = element_text(size = 17),
+            axis.text.x = element_text(size = 10, face = "bold"),
+            plot.title = element_text(hjust = 0.5, size = 17)) +
+      ggtitle(SC_title[i]) + ylab(NULL) + xlab(NULL) + 
+      guides(color = guide_legend(override.aes = list(size = 2)))
+    
+    if(q == 0){
+      tick_width <- c(round((y_max_low - miny)/2.5), round((maxy - y_min_high)/2.5))
+      pp <- gg.gap(plot = pp, ylim = c(miny, maxy),
+                   tick_width = tick_width,
+                   segments = c(y_max_low, y_min_high)) +
+        theme(plot.margin = unit(c(1, 0, 1, 0), "lines"), legend.position = 'bottom')
+    }
+    pics[[i]] <- pp
+  }
+  if (q == 2) {
+    ans <- ggarrange(plotlist = pics, ncol = 4, nrow = 1, common.legend = TRUE, legend = 'bottom')
+  } else {ans <- ggarrange(plotlist = pics, ncol = 4, nrow = 1, common.legend = FALSE, legend = 'none')}
+  ans <- annotate_figure(ans, left = text_grob('Diversity', rot = 90, size = 17, hjust = 0.5))
+  ans
+}
