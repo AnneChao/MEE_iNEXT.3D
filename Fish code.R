@@ -38,9 +38,9 @@ TD_obs <- AO3D(data = Abun, diversity = 'TD', q = c(0, 1, 2), datatype = 'abunda
 TD_asy <- AO3D(data = Abun, diversity = 'TD', q = c(0, 1, 2), datatype = 'abundance', nboot = 0, method = 'Asymptotic')
 
 
-out_TD <- rbind(TD_est %>% select(Assemblage, Order.q, qD, SC), 
-                TD_obs %>% select(Assemblage, Order.q, qD) %>% mutate(SC = 'Observed') , 
-                TD_asy %>% select(Assemblage, Order.q, qD) %>% mutate(SC = 'Asymptotic'))
+out_TD <- rbind(TD_est %>% select(Assemblage, Order.q, qTD, SC), 
+                TD_obs %>% select(Assemblage, Order.q, qTD) %>% mutate(SC = 'Observed') , 
+                TD_asy %>% select(Assemblage, Order.q, qTD) %>% mutate(SC = 'Asymptotic'))
 fig_1_or_3(out_TD, y_label = 'Taxonomic diversity')
 
 
@@ -76,9 +76,9 @@ FD_obs <- AO3D(data = Abun, diversity = 'FD', q = c(0, 1, 2), datatype = 'abunda
 FD_asy <- AO3D(data = Abun, diversity = 'FD', q = c(0, 1, 2), datatype = 'abundance', nboot = 0, FDdistM = distM, method = 'Asymptotic')
 
 
-out_FD <- rbind(FD_est %>% select(Assemblage, Order.q, qFD = qAUC, SC), 
-                FD_obs %>% select(Assemblage, Order.q, qFD = qAUC) %>% mutate(SC = 'Observed') , 
-                FD_asy %>% select(Assemblage, Order.q, qFD = qAUC) %>% mutate(SC = 'Asymptotic'))
+out_FD <- rbind(FD_est %>% select(Assemblage, Order.q, qFD, SC), 
+                FD_obs %>% select(Assemblage, Order.q, qFD) %>% mutate(SC = 'Observed') , 
+                FD_asy %>% select(Assemblage, Order.q, qFD) %>% mutate(SC = 'Asymptotic'))
 fig_1_or_3(out_FD, y_label = 'Functional diversity')
 
 
@@ -116,9 +116,9 @@ TD_obs <- AO3D(data = Inci_raw, diversity = 'TD', q = c(0, 1, 2), datatype = 'in
 TD_asy <- AO3D(data = Inci_raw, diversity = 'TD', q = c(0, 1, 2), datatype = 'incidence_raw', nboot = 0, nT = nT, method = 'Asymptotic')
 
 
-out_TD <- rbind(TD_est %>% select(Assemblage, Order.q, qD, SC), 
-                TD_obs %>% select(Assemblage, Order.q, qD) %>% mutate(SC = 'Observed'), 
-                TD_asy %>% select(Assemblage, Order.q, qD) %>% mutate(SC = 'Asymptotic'))
+out_TD <- rbind(TD_est %>% select(Assemblage, Order.q, qTD, SC), 
+                TD_obs %>% select(Assemblage, Order.q, qTD) %>% mutate(SC = 'Observed'), 
+                TD_asy %>% select(Assemblage, Order.q, qTD) %>% mutate(SC = 'Asymptotic'))
 fig_1_or_3(out_TD, y_label = 'Taxonomic diversity')
 
 
@@ -155,9 +155,9 @@ FD_obs <- AO3D(data = Inci_raw, diversity = 'FD', q = c(0, 1, 2), datatype = 'in
 FD_asy <- AO3D(data = Inci_raw, diversity = 'FD', q = c(0, 1, 2), datatype = 'incidence_raw',
                nboot = 0, nT = nT, FDdistM = distM, method = 'Asymptotic')
 
-out_FD <- rbind(FD_est %>% select(Assemblage, Order.q, qFD = qAUC, SC), 
-                FD_obs %>% select(Assemblage, Order.q, qFD = qAUC) %>% mutate(SC = 'Observed'), 
-                FD_asy %>% select(Assemblage, Order.q, qFD = qAUC) %>% mutate(SC = 'Asymptotic'))
+out_FD <- rbind(FD_est %>% select(Assemblage, Order.q, qFD, SC), 
+                FD_obs %>% select(Assemblage, Order.q, qFD) %>% mutate(SC = 'Observed'), 
+                FD_asy %>% select(Assemblage, Order.q, qFD) %>% mutate(SC = 'Asymptotic'))
 fig_1_or_3(out_FD, y_label = 'Functional diversity')
 
 
