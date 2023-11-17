@@ -34,8 +34,8 @@ Cmin <- apply(Abun, 2, function(x) iNEXT.3D:::Coverage(x, 'abundance', sum(x))) 
 
 TD_est <- estimate3D(data = Abun, diversity = 'TD', q = c(0, 1, 2), datatype = 'abundance', base = 'coverage', 
                      level = c(Cmin, Cmax), nboot = 0)
-TD_obs <- AO3D(data = Abun, diversity = 'TD', q = c(0, 1, 2), datatype = 'abundance', nboot = 0, method = 'Observed')
-TD_asy <- AO3D(data = Abun, diversity = 'TD', q = c(0, 1, 2), datatype = 'abundance', nboot = 0, method = 'Asymptotic')
+TD_obs <- ObsAsy3D(data = Abun, diversity = 'TD', q = c(0, 1, 2), datatype = 'abundance', nboot = 0, method = 'Observed')
+TD_asy <- ObsAsy3D(data = Abun, diversity = 'TD', q = c(0, 1, 2), datatype = 'abundance', nboot = 0, method = 'Asymptotic')
 
 
 out_TD <- rbind(TD_est %>% select(Assemblage, Order.q, qTD, SC), 
@@ -49,10 +49,10 @@ fig_1_or_3(out_TD, y_label = 'Taxonomic diversity')
 
 PD_est <- estimate3D(data = Abun, diversity = 'PD', q = c(0, 1, 2), datatype = 'abundance', base = 'coverage',
                      level = c(Cmin, Cmax), nboot = 0, PDtree = tree, PDreftime = 1)
-PD_obs <- AO3D(data = Abun, diversity = 'PD', q = c(0, 1, 2), datatype = 'abundance', 
-               nboot = 0, PDtree = tree, PDreftime = 1, method = 'Observed') 
-PD_asy <- AO3D(data = Abun, diversity = 'PD', q = c(0, 1, 2), datatype = 'abundance', 
-               nboot = 0, PDtree = tree, PDreftime = 1, method = 'Asymptotic')
+PD_obs <- ObsAsy3D(data = Abun, diversity = 'PD', q = c(0, 1, 2), datatype = 'abundance', 
+                   nboot = 0, PDtree = tree, PDreftime = 1, method = 'Observed') 
+PD_asy <- ObsAsy3D(data = Abun, diversity = 'PD', q = c(0, 1, 2), datatype = 'abundance', 
+                   nboot = 0, PDtree = tree, PDreftime = 1, method = 'Asymptotic')
 
 
 out_PD <- rbind(PD_est %>% select(Assemblage, Order.q, qPD, SC), 
@@ -72,8 +72,8 @@ distM <- cluster::daisy(x = traits, metric = "gower") %>% as.matrix()
 
 FD_est <- estimate3D(data = Abun, diversity = 'FD', q = c(0, 1, 2), datatype = 'abundance', base = 'coverage',
                      level = c(Cmin, Cmax), nboot = 0, FDdistM = distM)
-FD_obs <- AO3D(data = Abun, diversity = 'FD', q = c(0, 1, 2), datatype = 'abundance', nboot = 0, FDdistM = distM, method = 'Observed')
-FD_asy <- AO3D(data = Abun, diversity = 'FD', q = c(0, 1, 2), datatype = 'abundance', nboot = 0, FDdistM = distM, method = 'Asymptotic')
+FD_obs <- ObsAsy3D(data = Abun, diversity = 'FD', q = c(0, 1, 2), datatype = 'abundance', nboot = 0, FDdistM = distM, method = 'Observed')
+FD_asy <- ObsAsy3D(data = Abun, diversity = 'FD', q = c(0, 1, 2), datatype = 'abundance', nboot = 0, FDdistM = distM, method = 'Asymptotic')
 
 
 out_FD <- rbind(FD_est %>% select(Assemblage, Order.q, qFD, SC), 
@@ -112,8 +112,8 @@ Cmin <- sapply(1:length(nT), function(i) rowSums( Inci_raw[, (sum(nT[1:i]) - sum
 
 TD_est <- estimate3D(data = Inci_raw, diversity = 'TD', q = c(0, 1, 2), datatype = 'incidence_raw', base = 'coverage',
                      level = c(Cmin, Cmax), nboot = 0, nT = nT)
-TD_obs <- AO3D(data = Inci_raw, diversity = 'TD', q = c(0, 1, 2), datatype = 'incidence_raw', nboot = 0, nT = nT, method = 'Observed')
-TD_asy <- AO3D(data = Inci_raw, diversity = 'TD', q = c(0, 1, 2), datatype = 'incidence_raw', nboot = 0, nT = nT, method = 'Asymptotic')
+TD_obs <- ObsAsy3D(data = Inci_raw, diversity = 'TD', q = c(0, 1, 2), datatype = 'incidence_raw', nboot = 0, nT = nT, method = 'Observed')
+TD_asy <- ObsAsy3D(data = Inci_raw, diversity = 'TD', q = c(0, 1, 2), datatype = 'incidence_raw', nboot = 0, nT = nT, method = 'Asymptotic')
 
 
 out_TD <- rbind(TD_est %>% select(Assemblage, Order.q, qTD, SC), 
@@ -127,9 +127,9 @@ fig_1_or_3(out_TD, y_label = 'Taxonomic diversity')
 
 PD_est <- estimate3D(data = Inci_raw, diversity = 'PD', q = c(0, 1, 2), datatype = 'incidence_raw', base = 'coverage',
                      level = c(Cmin, Cmax), nboot = 0, nT = nT, PDtree = tree, PDreftime = 1)
-PD_obs <- AO3D(data = Inci_raw, diversity = 'PD', q = c(0, 1, 2), datatype = 'incidence_raw',
+PD_obs <- ObsAsy3D(data = Inci_raw, diversity = 'PD', q = c(0, 1, 2), datatype = 'incidence_raw',
                nboot = 0, nT = nT, PDtree = tree, PDreftime = 1, method = 'Observed')
-PD_asy <- AO3D(data = Inci_raw, diversity = 'PD', q = c(0, 1, 2), datatype = 'incidence_raw',
+PD_asy <- ObsAsy3D(data = Inci_raw, diversity = 'PD', q = c(0, 1, 2), datatype = 'incidence_raw',
                nboot = 0, nT = nT, PDtree = tree, PDreftime = 1, method = 'Asymptotic')
 
 
@@ -150,10 +150,10 @@ distM <- cluster::daisy(x = traits, metric = "gower") %>% as.matrix()
 
 FD_est <- estimate3D(data = Inci_raw, diversity = 'FD', q = c(0, 1, 2), datatype = 'incidence_raw', base = 'coverage',
                      level = c(Cmin, Cmax), nboot = 0, nT = nT, FDdistM = distM)
-FD_obs <- AO3D(data = Inci_raw, diversity = 'FD', q = c(0, 1, 2), datatype = 'incidence_raw', 
-               nboot = 0, nT = nT, FDdistM = distM, method = 'Observed')
-FD_asy <- AO3D(data = Inci_raw, diversity = 'FD', q = c(0, 1, 2), datatype = 'incidence_raw',
-               nboot = 0, nT = nT, FDdistM = distM, method = 'Asymptotic')
+FD_obs <- ObsAsy3D(data = Inci_raw, diversity = 'FD', q = c(0, 1, 2), datatype = 'incidence_raw', 
+                   nboot = 0, nT = nT, FDdistM = distM, method = 'Observed')
+FD_asy <- ObsAsy3D(data = Inci_raw, diversity = 'FD', q = c(0, 1, 2), datatype = 'incidence_raw',
+                   nboot = 0, nT = nT, FDdistM = distM, method = 'Asymptotic')
 
 out_FD <- rbind(FD_est %>% select(Assemblage, Order.q, qFD, SC), 
                 FD_obs %>% select(Assemblage, Order.q, qFD) %>% mutate(SC = 'Observed'), 
