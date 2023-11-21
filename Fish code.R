@@ -171,10 +171,3 @@ fig_2_or_4(TD.output = out_TD, PD.output = out_PD, FD.output = out_FD, q = 1)
 fig_2_or_4(TD.output = out_TD, PD.output = out_PD, FD.output = out_FD, q = 2)
 
 
-# ========================================================================================================== #
-# Alternatively, for Figure 3a (TD) and Fifure 3c (FD), one can also use incidence-frequency data, but not 
-# for PD because the incidence frequency of any interior node of a phylogenetic tree depends on raw data. 
-
-Inci_freq <- read.csv("Fish incidence frequency data.csv", row.names = 1, header= TRUE)
-TD_est <- estimate3D(data = Inci_freq, diversity = 'TD', q = c(0, 1, 2), datatype = 'incidence_freq', 
-                     base = 'coverage', level = c(Cmin, Cmax), nboot = 0)
